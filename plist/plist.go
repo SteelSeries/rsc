@@ -1,6 +1,8 @@
-// Copyright 2012 The Go Authors.  All rights reserved.
+// Copyright 2012 The Go Authors.All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+//
+// Modified by Joel Hunsley to unmarshal boolean values
 
 // Package plist implements parsing of Apple plist files.
 package plist
@@ -151,7 +153,22 @@ func unmarshalValue(data []byte, v reflect.Value) (rest []byte, err error) {
 		}
 		v.SetInt(int64(i))
 		return data, nil
+    case "<true/>", "<false/>":
+        if v.Kind() != reflect.Bool {
+            return nil, fmt.Errorf("cannot unmarshal <true/> or <false/> into non-bool %s", v.Type())
 	}
+
+        if string(tag) == "<true/>" {
+            temp := true
+            v.SetBool(temp)
+        } else if string(tag) == "<false/>" {
+            temp := false
+            v.SetBool(temp)
+        }
+
+        return data, nil
+    }
+
 	return nil, fmt.Errorf("unexpected tag %s", tag)
 }
 
@@ -171,6 +188,8 @@ func skipValue(data []byte) (rest []byte, err error) {
 			if n == 0 {
 				break
 			}
+        } else if tag[len(tag)-2] == '/' {
+            // self-closing tag - ignore
 		} else {
 			n++
 		}
